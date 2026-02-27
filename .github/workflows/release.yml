@@ -72,5 +72,5 @@ jobs:
           releaseBody: '摸鱼办最新版本发布 🐟 请根据平台下载对应安装包！'
           releaseDraft: true # 是否作为草稿（默认 true 方便你检查后再公开发布）
           prerelease: false
-          args: ${{ matrix.platform == 'macos-latest' && '--target aarch64-apple-darwin --target x86_64-apple-darwin' || '' }}
-          # 针对 macOS，一次构建兼容 Intel 与 M 芯片架构的 Universal 产物
+          # 不额外指定 args，使用 tauri 默认的当前系统架构进行单平台构建
+          args: ''
