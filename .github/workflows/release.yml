@@ -1,0 +1,76 @@
+name: "Release"
+
+on:
+  push:
+    tags:
+      - 'v*' # 当推送以 v 开头的 tag 时触发（例如 v1.0.0）
+
+jobs:
+  release:
+    permissions:
+      contents: write # 允许 Action 创建 Release 并上传产物
+    strategy:
+      fail-fast: false
+      matrix:
+        # 支持构建这四个主流平台
+        platform: [macos-latest, ubuntu-22.04, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 缓存 npm 依赖，加快构建速度
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # 仅编译 Tauri 所需的完整 target，避免跨平台混乱
+          targets: x86_64-apple-darwin, aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu 
+
+      # 由于您的是 tauri v2 应用，安装对应的 Linux 系统依赖库（仅在 Ubuntu 运行）
+      - name: Install Ubuntu dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and Package Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 在 GitHub Worker 上通常不涉及本机 LibreSSL 错误，故不需要注入 DYLD_LIBRARY_PATH
+        with:
+          tagName: 'v__VERSION__' # 自动读取 tauri.conf.json 中的版本号重命名 release tag
+          releaseName: '摸鱼办 v__VERSION__'
+          releaseBody: '摸鱼办最新版本发布 🐟 请根据平台下载对应安装包！'
+          releaseDraft: true # 是否作为草稿（默认 true 方便你检查后再公开发布）
+          prerelease: false
+          args: ${{ matrix.platform == 'macos-latest' && '--target aarch64-apple-darwin --target x86_64-apple-darwin' || '' }}
+          # 针对 macOS，一次构建兼容 Intel 与 M 芯片架构的 Universal 产物
