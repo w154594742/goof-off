@@ -32,7 +32,6 @@ export function getNextPaydays(
 ): { day: number; daysLeft: number }[] {
     const year = today.getFullYear();
     const month = today.getMonth();
-    const currentDay = today.getDate();
 
     const results: { day: number; daysLeft: number }[] = [];
 

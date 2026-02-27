@@ -60,7 +60,7 @@ const CACHE_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 async function loadCache(): Promise<CachedData | null> {
   try {
     const { load } = await import('@tauri-apps/plugin-store');
-    const store = await load('settings.json', { autoSave: true });
+    const store = await load('settings.json', { autoSave: true, defaults: {} });
     const cached = await store.get<CachedData>(CACHE_KEY);
     return cached || null;
   } catch {
@@ -71,7 +71,7 @@ async function loadCache(): Promise<CachedData | null> {
 async function saveCache(data: CachedData): Promise<void> {
   try {
     const { load } = await import('@tauri-apps/plugin-store');
-    const store = await load('settings.json', { autoSave: true });
+    const store = await load('settings.json', { autoSave: true, defaults: {} });
     await store.set(CACHE_KEY, data);
     await store.save();
   } catch {
@@ -85,7 +85,7 @@ async function fetchHolidaysFromAPI(year: number): Promise<Holiday[] | null> {
   try {
     const response = await fetch(`https://timor.tech/api/holiday/year/${year}/`);
     if (!response.ok) return null;
-    
+
     const data = await response.json();
     if (data.code !== 0 || !data.holiday) return null;
 
