@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "摸鱼办温馨提示",
+  "productName": "goof-off",
   "version": "1.0.0",
   "identifier": "com.goofoff.desk",
   "build": {

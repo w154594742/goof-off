@@ -108,6 +108,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![toggle_always_on_top])
         .setup(|app| {
             create_tray(app)?;
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_title("摸鱼办温馨提示");
+            }
             Ok(())
         })
         .run(tauri::generate_context!())
